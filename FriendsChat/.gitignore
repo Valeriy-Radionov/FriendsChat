@@ -1,0 +1,66 @@
+# Xcode
+#
+# gitignore авторы: не забудьте обновить Global / Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
+
+# # Построение сгенерировано
+построить /
+DerivedData /
+
+# # Различные настройки
+* .pbxuser
+! default.pbxuser
+* .mode1v3
+! default.mode1v3
+* .mode2v3
+! default.mode2v3
+* .perspectivev3
+! default.perspectivev3
+xcuserdata /
+
+# # Другое
+* .moved-в сторону
+* .xcuserstate
+
+# # Obj-C / Swift специфичный
+* .hmap
+* .ipa
+* .dSYM.zip
+* .dSYM
+
+# # Детские площадки
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+#
+# Добавьте эту строку, если вы хотите избежать проверки исходного кода из зависимостей Swift Package Manager.
+# Пакеты /
+# Package.pins
+.build /
+
+# CocoaPods
+#
+# Мы не рекомендуем добавлять каталог Pods в ваш .gitignore. тем не мение
+# вы должны судить сами, плюсы и минусы упоминаются по адресу:
+# https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control
+#
+# Стручки /
+
+# Карфаген
+#
+# Добавьте эту строку, если вы хотите избежать проверки исходного кода из зависимостей Карфагена.
+# Карфаген / Оформить заказ
+
+Карфаген / Строить
+
+# fastlane
+#
+# Рекомендуется не хранить скриншоты в git-репо. Вместо этого используйте fastlane, чтобы заново сгенерировать
+# скриншоты, когда они нужны.
+# Для получения дополнительной информации о рекомендуемом посещении установки:
+# https://github.com/fastlane/fastlane/blob/master/fastlane/docs/Gitignore.md
+
+Fastlane / report.xml
+fastlane / Preview.html
+Фастлэйн / скриншоты
+fastlane / test_output
