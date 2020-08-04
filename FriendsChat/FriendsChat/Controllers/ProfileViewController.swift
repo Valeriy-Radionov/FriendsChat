@@ -7,20 +7,40 @@
 //
 
 import UIKit
+import SDWebImage
 
 class ProfileViewController: UIViewController {
     
     let containerView = UIView()
-    let imageView = UIImageView(image: #imageLiteral(resourceName: "human3"), contentMode: .scaleAspectFill)
-    let nameLabel = UILabel(text: "Sara Bark", font: .systemFont(ofSize: 20, weight: .light))
+    let imageView = UIImageView(image: #imageLiteral(resourceName: "human1"), contentMode: .scaleAspectFill)
+    let nameLabel = UILabel(text: "Sara Smit", font: .systemFont(ofSize: 20, weight: .light))
     let aboutMeLabel = UILabel(text: "You have the opportunity to chat with with the best girl in the world!", font: .systemFont(ofSize: 16, weight: .light))
     let myTextField = InsertableTextField()
+    
+    private let user: MUser
+    
+    init(user: MUser) {
+        self.user = user
+        self.nameLabel.text = user.username
+        self.aboutMeLabel.text = user.description
+        self.imageView.sd_setImage(with: URL(string: user.avatarStringURL), completed: nil)
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         costomizeElements()
         setupConstraints()
-        view.backgroundColor = .white
+        view.backgroundColor = .mainWhite()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        keyboardSettings()
+        myTextField.delegate = self
     }
     
     private func costomizeElements() {
@@ -39,7 +59,17 @@ class ProfileViewController: UIViewController {
     }
     
     @objc private func sendMessage() {
-        print(#function)
+        guard let message = myTextField.text, message != "" else { return }
+        self.dismiss(animated: true) {
+            FirestoreService.shared.createWaitingChat(message: message, receiver: self.user) { (result) in
+                switch result {
+                case .success():
+                    UIApplication.getTopViewController()?.showAlert(with: "Успешно", and: "Ваше сообщение для \(self.user.username) было отправлено.")
+                case .failure(let error):
+                    UIApplication.getTopViewController()?.showAlert(with: "Ошибка", and: error.localizedDescription)
+                }
+            }
+        }
     }
 }
 
@@ -48,6 +78,7 @@ class ProfileViewController: UIViewController {
 extension ProfileViewController {
     
     private func setupConstraints() {
+        
         view.addSubview(imageView)
         view.addSubview(containerView)
         containerView.addSubview(nameLabel)
@@ -58,7 +89,7 @@ extension ProfileViewController {
             imageView.topAnchor.constraint(equalTo: view.topAnchor),
             imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             imageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            imageView.bottomAnchor.constraint(equalTo: containerView.topAnchor, constant: 30 )
+            imageView.bottomAnchor.constraint(equalTo: containerView.topAnchor, constant: 30)
         ])
         
         NSLayoutConstraint.activate([
@@ -90,27 +121,40 @@ extension ProfileViewController {
     }
 }
 
-// MARK: SwiftUI
+// MARK: Keyboard Settings
 
-import SwiftUI
-
-struct ProfileVCProvider: PreviewProvider  {
+extension ProfileViewController {
     
-    static var previews: some View {
-        ContainerView().edgesIgnoringSafeArea(.all)
+    func keyboardSettings() {
+        
+        NotificationCenter.default.addObserver(self, selector:  #selector(keyboardDidShow), name: UIResponder.keyboardDidShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector:  #selector(keyboardDidHide), name: UIResponder.keyboardDidHideNotification, object: nil)
     }
     
-    struct ContainerView: UIViewControllerRepresentable {
+    @objc func keyboardDidShow(notification: Notification) {
         
-        let  profileVC = ProfileViewController()
-        
-        func makeUIViewController(context: Context) -> UIViewController {
-            return profileVC
+        if let kbFrameSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue {
+            if view.frame.origin.y == 0 {
+                self.view.frame.origin.y -= kbFrameSize.height
+            }
         }
-        
-        func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
-            
+    }
+    
+    @objc func keyboardDidHide() {
+        if view.frame.origin.y != 0 {
+            self.view.frame.origin.y = 0
         }
     }
     
 }
+
+// MARK: UITextFieldDelegate
+
+extension ProfileViewController: UITextFieldDelegate {
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        myTextField.resignFirstResponder()
+        return true
+    }
+}
+

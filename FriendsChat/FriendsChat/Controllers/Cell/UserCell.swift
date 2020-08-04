@@ -7,15 +7,16 @@
 //
 
 import UIKit
+import SDWebImage
 
 class UserCell: UICollectionViewCell, SelfConfiguringCell {
-
+    
     let userImageView = UIImageView()
     let userName = UILabel(text: "User name", font: .laoSangamMN20())
     let containerView = UIView()
     
     static var reuseId: String = "UserCell"
-      
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .white
@@ -27,6 +28,10 @@ class UserCell: UICollectionViewCell, SelfConfiguringCell {
         self.layer.shadowOffset = CGSize(width: 0, height: 4)
     }
     
+    override func prepareForReuse() {
+        userImageView.image = nil
+    }
+    
     override func layoutSubviews() {
         super.layoutSubviews()
         self.containerView.layer.cornerRadius = 4
@@ -35,9 +40,9 @@ class UserCell: UICollectionViewCell, SelfConfiguringCell {
     
     func configure<U>(with value: U) where U : Hashable {
         guard let user: MUser = value as? MUser else { return }
-        
-        userImageView.image = UIImage(named: user.avatarStringURL)
-        userName.text = user.userName
+        guard let url = URL(string: user.avatarStringURL) else { return }
+        userImageView.sd_setImage(with: url, completed: nil)
+        userName.text = user.username
     }
     
     private func setupConstraints() {

@@ -30,11 +30,53 @@ class SignUpViewController: UIViewController {
         return button
     }()
     
+    let scrollView: UIScrollView = {
+        let scrollView = UIScrollView()
+        scrollView.backgroundColor = .white
+        
+        return scrollView
+    }()
+    
+    weak var delegate: AuthNavigatingDelegate?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
         setupConstraints()
+        signUpButton.addTarget(self, action: #selector(signUpButtonTapped), for: .touchUpInside)
+        loginButton.addTarget(self, action: #selector(loginButtonTapped), for: .touchUpInside)
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        passwordTextField.isSecureTextEntry = true
+        confirmPasswordTextField.isSecureTextEntry = true
+        keyboardSettings()
+        confirmPasswordTextField.delegate = self
+        emailTextField.delegate = self
+        passwordTextField.delegate = self
+    }
+    
+    @objc private func signUpButtonTapped() {
+        AuthService.shared.register(email: emailTextField.text,
+                                    password: passwordTextField.text,
+                                    confirmPassword: confirmPasswordTextField.text) { (result) in
+                                        switch result {
+                                        case .success(let user):
+                                            self.showAlert(with: "Успешно", and: "ВЫ зарегистрированны!") {
+                                                self.present(SetupProfileViewController(currentUser: user), animated: true, completion: nil)
+                                            }
+                                        case .failure(let error):
+                                            self.showAlert(with: "Ошибка!", and: error.localizedDescription)
+                                        }
+        }
+    }
+    
+    @objc private func loginButtonTapped() {
+        self.dismiss(animated: true) {
+            self.delegate?.toLoginVC()
+        }
+    }
+    
 }
 
 // MARK: Setup Constraints
@@ -58,31 +100,83 @@ extension SignUpViewController {
         welcomeLabel.translatesAutoresizingMaskIntoConstraints = false
         stackView.translatesAutoresizingMaskIntoConstraints = false
         bottomStackView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
         
-        view.addSubview(welcomeLabel)
-        view.addSubview(stackView)
-        view.addSubview(bottomStackView)
+        view.addSubview(scrollView)
+        scrollView.addSubview(welcomeLabel)
+        scrollView.addSubview(stackView)
+        scrollView.addSubview(bottomStackView)
         
         NSLayoutConstraint.activate([
-            welcomeLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 100),
-            welcomeLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor, constant: 0),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 0),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 0),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: 0)
+        ])
+        
+        NSLayoutConstraint.activate([
+            welcomeLabel.topAnchor.constraint(equalTo: scrollView.topAnchor, constant: 87),
+            welcomeLabel.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor)
         ])
         
         NSLayoutConstraint.activate([
             stackView.topAnchor.constraint(equalTo: welcomeLabel.bottomAnchor, constant: 70),
-            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
+            stackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 40),
             stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40)
             
         ])
         
         NSLayoutConstraint.activate([
             bottomStackView.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 60),
-            bottomStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 40),
-            bottomStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -40)
+            bottomStackView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 40),
+            bottomStackView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -40)
             
         ])
     }
 }
+
+// MARK: Keyboard Settings
+
+extension SignUpViewController {
+    
+    func keyboardSettings() {
+        
+        NotificationCenter.default.addObserver(self, selector:  #selector(keyboardDidShow), name: UIResponder.keyboardDidShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector:  #selector(keyboardDidHide), name: UIResponder.keyboardDidHideNotification, object: nil)
+    }
+    
+    @objc func keyboardDidShow(notification: Notification) {
+        
+        guard let userInfo = notification.userInfo else { return }
+        let kbFrameSize = (userInfo[UIResponder.keyboardFrameEndUserInfoKey] as! NSValue).cgRectValue
+        
+        self.scrollView.contentSize = CGSize(width: view.bounds.size.width,
+                                             height: view.bounds.size.height + kbFrameSize.height)
+        
+        self.scrollView.scrollIndicatorInsets = UIEdgeInsets(top: 0,
+                                                             left: 0,
+                                                             bottom:  kbFrameSize.height,
+                                                             right: 0)
+    }
+    
+    @objc func keyboardDidHide() {
+        self.scrollView.contentSize = CGSize(width: view.bounds.size.width, height: view.bounds.size.height)
+    }
+    
+}
+
+// MARK: UITextFieldDelegate
+
+extension SignUpViewController: UITextFieldDelegate {
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        confirmPasswordTextField.resignFirstResponder()
+        emailTextField.resignFirstResponder()
+        passwordTextField.resignFirstResponder()
+        return true
+    }
+}
+
 
 // MARK: SwiftUI
 
@@ -108,3 +202,5 @@ struct SignUpVCProvider: PreviewProvider  {
     }
     
 }
+
+
